@@ -1,0 +1,28 @@
+{
+  "title": "CeX Monitor",
+  "config": {
+    "step": {
+      "user": {"title": "Search CeX product", "description": "Search the CeX Portugal catalogue and choose a product to monitor.", "data": {"search_query": "Product search"}},
+      "product": {"title": "Choose product", "description": "Select the product and optionally set a target price.", "data": {"product_id": "Product", "target_price": "Target price"}}
+    },
+    "error": {"cannot_connect": "Could not connect to CeX.", "no_results": "The search returned no products."},
+    "abort": {"already_configured": "This product is already being monitored."}
+  },
+  "entity": {
+    "sensor": {
+      "sell_price": {"name": "Selling price"},
+      "cash_price": {"name": "Cash value"},
+      "exchange_price": {"name": "Voucher value"},
+      "online_stock": {"name": "Online stock"},
+      "nearest_store": {"name": "Nearest store with stock"},
+      "nearest_store_stock": {"name": "Nearest store stock"},
+      "nearest_store_distance": {"name": "Nearest store distance"}
+    },
+    "binary_sensor": {
+      "online_available": {"name": "Available online"},
+      "nearby_available": {"name": "Available nearby"},
+      "target_price_reached": {"name": "Target price reached"}
+    },
+    "button": {"refresh": {"name": "Refresh now"}}
+  }
+}

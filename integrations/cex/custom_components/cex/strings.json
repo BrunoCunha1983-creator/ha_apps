@@ -1,0 +1,28 @@
+{
+  "title": "CeX Monitor",
+  "config": {
+    "step": {
+      "user": {"title": "Procurar produto CeX", "description": "Pesquisa o catálogo CeX Portugal e escolhe um produto para monitorizar.", "data": {"search_query": "Produto a procurar"}},
+      "product": {"title": "Escolher produto", "description": "Seleciona o produto e, opcionalmente, define um preço-alvo.", "data": {"product_id": "Produto", "target_price": "Preço-alvo"}}
+    },
+    "error": {"cannot_connect": "Não foi possível contactar a CeX.", "no_results": "A pesquisa não devolveu produtos."},
+    "abort": {"already_configured": "Este produto já está a ser monitorizado."}
+  },
+  "entity": {
+    "sensor": {
+      "sell_price": {"name": "Preço de venda"},
+      "cash_price": {"name": "Valor em dinheiro"},
+      "exchange_price": {"name": "Valor em voucher"},
+      "online_stock": {"name": "Stock online"},
+      "nearest_store": {"name": "Loja mais próxima com stock"},
+      "nearest_store_stock": {"name": "Stock da loja mais próxima"},
+      "nearest_store_distance": {"name": "Distância da loja mais próxima"}
+    },
+    "binary_sensor": {
+      "online_available": {"name": "Disponível online"},
+      "nearby_available": {"name": "Disponível numa loja próxima"},
+      "target_price_reached": {"name": "Preço-alvo atingido"}
+    },
+    "button": {"refresh": {"name": "Atualizar agora"}}
+  }
+}
