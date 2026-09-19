@@ -1,13 +1,13 @@
 {
   "domain": "timezone_change",
   "name": "Timezone & Clock Change",
-  "codeowners": [],
+  "codeowners": ["@BrunoCunha1983-creator"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/IceTuning/ha-timezone-change",
+  "documentation": "https://github.com/BrunoCunha1983-creator/ha_apps/tree/main/integrations/timezone_change",
   "integration_type": "helper",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/IceTuning/ha-timezone-change/issues",
+  "issue_tracker": "https://github.com/BrunoCunha1983-creator/ha_apps/issues",
   "requirements": [
     "tzfpy==2.1.0"
   ],
