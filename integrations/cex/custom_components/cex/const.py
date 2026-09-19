@@ -22,3 +22,4 @@ DEFAULT_SCAN_INTERVAL = timedelta(minutes=30)
 DEFAULT_RESULT_COUNT = 25
 COUNTRY_CODE = "pt"
 BASE_URL = "https://wss2.cex.pt.webuy.io/v3"
+SHOP_URL = "https://pt.webuy.com"
