@@ -1,94 +1,46 @@
-# ha_apps
+# Timezone & Clock Change for Home Assistant
 
-Monorepo principal dos projetos relacionados com **Home Assistant**.
+Custom integration for Home Assistant that tracks timezone, UTC offset and daylight-saving-time changes.
 
-A ideia é manter aqui o desenvolvimento organizado por tipo de projeto e evitar criar um repositório separado para cada pequena integração, cartão, automação ou componente.
+It can use:
 
-## Estrutura
+- Home Assistant's configured timezone;
+- a fixed IANA timezone such as `Europe/Lisbon`;
+- a moving `device_tracker` with `latitude` and `longitude`, useful for a motorhome, car, phone or other GPS tracker.
 
-```text
-ha_apps/
-├── integrations/   # Custom integrations / custom_components
-│   ├── cex/
-│   └── timezone_change/
-├── cards/          # Lovelace / frontend cards
-├── esphome/        # Componentes externos, YAML e projetos ESPHome
-├── addons/         # Add-ons para Home Assistant OS / Supervisor
-├── services/       # Serviços auxiliares: bridges, Traccar/geocoder, backends
-├── automations/    # Automações reutilizáveis
-├── blueprints/     # Blueprints
-├── packages/       # Packages Home Assistant
-├── scripts/        # Scripts e ferramentas auxiliares para HA
-├── dashboards/     # Dashboards / exemplos Lovelace
-├── installations/  # Configurações completas Casa/Caravana
-├── docs/           # Documentação e plano de migração
-└── external/       # Índice de forks/projetos externos relacionados com HA
-```
+## Main entities
 
-## Integrações atuais
+Each configured source creates timezone/local-time/UTC-offset sensors, a DST binary sensor, next/previous clock-change sensors, an event entity and a calendar.
 
-- `integrations/timezone_change` — gestão de fusos horários, mudanças de hora/DST e localização móvel através de `device_tracker`.
-- `integrations/cex` — monitorização de produtos CeX Portugal: preços, stock online, disponibilidade em lojas próximas e preço-alvo.
+## Mobile mode
 
-## Projetos a consolidar
+Select a `device_tracker` which exposes `latitude` and `longitude`. The integration resolves the IANA timezone locally using `tzfpy`, so no external timezone API is required.
 
-O inventário completo está em [docs/MIGRATION.md](docs/MIGRATION.md).
+When the tracker crosses a timezone boundary, the integration updates the timezone and emits `timezone_changed`. If the UTC offset changes, it also emits `offset_changed`.
 
-Inclui, entre outros:
-- GPSD Advanced
-- GSM Tracker
-- Metro Lisboa
-- SIMAR
-- Fogos.pt
-- Ocorrências Ativas PT
-- E-Redes
-- Offcloud
-- Resíduos PT
-- Astro Tracker
-- Pingo Doce Plus
-- FreePBX/Asterisk bridge
-- HT503
-- Traccar Geocoder
-- ESPHome Presence
+## Installation for testing
 
-## Regra de organização
+Copy `custom_components/timezone_change` to `/config/custom_components/`, restart Home Assistant, then add **Timezone & Clock Change** from Settings → Devices & services.
 
-- Projeto novo de Home Assistant criado por nós → fica neste repositório.
-- Custom integration → `integrations/<domain>/`.
-- Lovelace card → `cards/<nome>/`.
-- ESPHome → `esphome/<nome>/`.
-- Add-on → `addons/<nome>/`.
-- Serviço auxiliar de HA → `services/<nome>/`.
-- Automação/blueprint/package → pasta respetiva.
-- Configuração completa → `installations/<nome>/`.
-- Fork externo → manter referenciado em `external/` até decidirmos manter uma versão própria.
+## Monorepo
 
-## HACS
+This copy lives inside the `ha_apps` monorepo under `integrations/timezone_change`. For HACS distribution it can be published/synchronised to a standalone repository automatically.
 
-Este repositório funciona como **monorepo de desenvolvimento**.
+## Notes
 
-Projetos destinados a distribuição individual pelo HACS podem ser publicados/sincronizados para repositórios próprios a partir das respetivas subpastas. Assim conseguimos manter o GitHub organizado sem sacrificar a estrutura esperada pelas ferramentas de distribuição.
+- Refreshes once per minute.
+- GPS mode refreshes immediately when the selected `device_tracker` changes.
+- Keeps the last known timezone if the tracker becomes temporarily unavailable.
+- Uses two-sample hysteresis near timezone borders to reduce GPS flapping.
+- Timezone transition rules come from Python `zoneinfo`.
 
+## Events
 
-## Instalação por HACS
+- `timezone_changed`
+- `offset_changed`
+- `dst_started`
+- `dst_ended`
 
-**Não adicionar `ha_apps` diretamente aos Repositórios personalizados do HACS.**
+## License
 
-O HACS valida a raiz de cada repositório e uma integração HACS precisa de ter uma estrutura semelhante a:
-
-```text
-<repo>/
-├── custom_components/
-│   └── <domain>/
-├── hacs.json
-├── README.md
-└── LICENSE
-```
-
-Como `ha_apps` é um monorepo, as integrações estão dentro de `integrations/<nome>/`. Por isso cada integração destinada ao HACS terá um pequeno repositório de distribuição próprio, sincronizado a partir deste monorepo.
-
-Para as duas integrações atuais:
-- `integrations/cex/` → repositório de distribuição recomendado: `ha-cex`
-- `integrations/timezone_change/` → repositório de distribuição recomendado: `ha-timezone-change`
-
-Ver [docs/HACS_DISTRIBUTION.md](docs/HACS_DISTRIBUTION.md).
+MIT
