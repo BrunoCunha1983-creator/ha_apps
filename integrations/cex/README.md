@@ -2,10 +2,11 @@
 
 Integração não oficial para monitorizar produtos da **CeX Portugal** no Home Assistant.
 
-## Funcionalidades da v0.1.0
+## Funcionalidades da v0.1.1
 
 - configuração totalmente pela UI do Home Assistant;
 - pesquisa de produtos CeX durante a configuração;
+- fallback automático para o site público da CeX quando o endpoint de pesquisa WSS é bloqueado;
 - preço atual de venda na CeX;
 - valor que a CeX paga em dinheiro;
 - valor de troca/voucher;
@@ -17,6 +18,14 @@ Integração não oficial para monitorizar produtos da **CeX Portugal** no Home 
 - botão **Atualizar agora**;
 - atualização automática de 30 em 30 minutos;
 - imagem do produto nas entidades quando fornecida pela CeX.
+
+## Instalação com HACS
+
+1. Abre **HACS → Integrações**.
+2. Em **Repositórios personalizados**, adiciona `BrunoCunha1983-creator/ha-cex` como **Integration**.
+3. Instala/atualiza **CeX Monitor**.
+4. **Reinicia o Home Assistant**.
+5. Vai a **Definições → Dispositivos e Serviços → Adicionar integração** e procura **CeX Monitor**.
 
 ## Instalação manual
 
@@ -44,13 +53,17 @@ Por produto são criados sensores equivalentes a:
 - `binary_sensor.<produto>_preco_alvo_atingido` (quando configurado)
 - `button.<produto>_atualizar_agora`
 
-O nome final das entidades é atribuído pelo Home Assistant e pode ser alterado na UI.
+## Como funciona a ligação à CeX
 
-## API
+A integração tenta primeiro os endpoints web WSS usados pela CeX. Se a pesquisa for bloqueada por proteção anti-bot/Cloudflare, a v0.1.1 tenta automaticamente a página pública `pt.webuy.com/search` e extrai os resultados server-side.
 
-Esta integração usa os endpoints web públicos utilizados pelo site CeX/WeBuy (`wss2.cex.pt.webuy.io`). Não existe afiliação oficial com a CeX e estes endpoints podem mudar sem aviso.
+Para detalhes de produto também existe fallback para a página pública do produto. A consulta de stock de lojas continua a usar o endpoint WSS; se esse endpoint estiver temporariamente bloqueado, os restantes sensores do produto continuam a atualizar e os sensores de loja ficam sem dados até a ligação recuperar.
 
 Não são usados login, conta CeX, checkout, encomendas ou dados pessoais.
+
+## Diagnóstico
+
+Se a pesquisa ainda falhar, consulta **Definições → Sistema → Registos** e procura por `CeX product search failed`. A mensagem inclui o erro do endpoint WSS e, quando aplicável, o erro do fallback do website.
 
 ## Próximos passos
 
@@ -60,3 +73,4 @@ Não são usados login, conta CeX, checkout, encomendas ou dados pessoais.
 - filtros por raio/loja;
 - ações para pesquisa e refresh;
 - suporte opcional a outras regiões CeX.
+
