@@ -1,0 +1,12 @@
+{
+  "domain": "portugal_football",
+  "name": "Portugal Football",
+  "codeowners": ["@BrunoCunha1983-creator"],
+  "config_flow": true,
+  "documentation": "https://github.com/BrunoCunha1983-creator/ha_apps/tree/main/integrations/portugal_football",
+  "issue_tracker": "https://github.com/BrunoCunha1983-creator/ha_apps/issues",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.1.0"
+}
