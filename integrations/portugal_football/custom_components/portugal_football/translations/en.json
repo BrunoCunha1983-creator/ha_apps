@@ -1,0 +1,24 @@
+{
+  "title": "Portugal Football",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Liga Portugal",
+        "description": "Enter your Football-Data.org API key.",
+        "data": {
+          "api_key": "API Key"
+        },
+        "data_description": {
+          "api_key": "football-data.org API key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the API.",
+      "invalid_auth": "Invalid API key or no access to Liga Portugal."
+    },
+    "abort": {
+      "already_configured": "Liga Portugal is already configured."
+    }
+  }
+}
