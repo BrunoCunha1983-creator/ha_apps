@@ -26,17 +26,11 @@ from .const import (
 from .coordinator import CexCoordinator
 
 
-async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload when watchlist/settings change."""
-    await hass.config_entries.async_reload(entry.entry_id)
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up CeX Monitor from a config entry."""
     coordinator = CexCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
-    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

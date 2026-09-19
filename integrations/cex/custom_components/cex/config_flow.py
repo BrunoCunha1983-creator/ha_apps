@@ -148,14 +148,13 @@ class CexConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry):
-        return CexOptionsFlow(config_entry)
+        return CexOptionsFlow()
 
 
-class CexOptionsFlow(config_entries.OptionsFlow):
+class CexOptionsFlow(config_entries.OptionsFlowWithReload):
     """Manage saved searches, product watches and polling settings."""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        self._entry = config_entry
+    def __init__(self) -> None:
         self._pending_query: str | None = None
         self._pending_name: str | None = None
         self._preview: list[dict[str, Any]] = []
@@ -165,11 +164,11 @@ class CexOptionsFlow(config_entries.OptionsFlow):
 
     @property
     def _options(self) -> dict[str, Any]:
-        return dict(self._entry.options)
+        return dict(self.config_entry.options)
 
     @property
     def _watches(self) -> list[dict[str, Any]]:
-        return list(self._entry.options.get(CONF_WATCHES, []))
+        return list(self.config_entry.options.get(CONF_WATCHES, []))
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         return self.async_show_menu(
@@ -409,7 +408,7 @@ class CexOptionsFlow(config_entries.OptionsFlow):
                 {
                     vol.Required(
                         CONF_SCAN_INTERVAL,
-                        default=self._entry.options.get(
+                        default=self.config_entry.options.get(
                             CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
                         ),
                     ): selector.NumberSelector(
@@ -423,7 +422,7 @@ class CexOptionsFlow(config_entries.OptionsFlow):
                     ),
                     vol.Required(
                         CONF_MAX_RESULTS,
-                        default=self._entry.options.get(
+                        default=self.config_entry.options.get(
                             CONF_MAX_RESULTS, DEFAULT_MAX_RESULTS
                         ),
                     ): selector.NumberSelector(
