@@ -260,7 +260,7 @@ class CexApiClient:
                 name = _plain_text(body)
                 if not name:
                     alt_match = re.search(
-                        r'<img\\b[^>]*\\balt=["\\\'](?P<alt>[^"\\\']+)["\\\']',
+                        r"""<img\b[^>]*\balt=["'](?P<alt>[^"']+)["']""",
                         body,
                         flags=re.I | re.S,
                     )
