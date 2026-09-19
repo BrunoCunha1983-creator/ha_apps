@@ -287,6 +287,142 @@ class CexApiClient:
 
         return list(products.values())[:count]
 
+    async def search_data(
+        self,
+        query: str,
+        count: int = DEFAULT_RESULT_COUNT,
+        *,
+        category_ids: list[int] | None = None,
+        in_stock: bool | None = None,
+        store_ids: list[int] | None = None,
+        min_price: float | None = None,
+        max_price: float | None = None,
+        sort_by: str = "relevance",
+        sort_order: str = "desc",
+    ) -> dict[str, Any]:
+        """Search with CeX filters and return search metadata as well as boxes."""
+        params: dict[str, Any] = {
+            "q": query,
+            "firstRecord": 1,
+            "count": count,
+            "sortBy": sort_by,
+            "sortOrder": sort_order,
+        }
+        if category_ids:
+            params["categoryIds"] = json.dumps(
+                [int(value) for value in category_ids], separators=(",", ":")
+            )
+        if store_ids:
+            params["storeIds"] = json.dumps(
+                [int(value) for value in store_ids], separators=(",", ":")
+            )
+        if in_stock is not None:
+            params["inStock"] = 1 if in_stock else 0
+        if min_price is not None:
+            params["minPrice"] = float(min_price)
+        if max_price is not None:
+            params["maxPrice"] = float(max_price)
+
+        api_error: CexApiError | None = None
+        try:
+            data = await self._get("/boxes", params)
+            boxes = data.get("boxes", [])
+            if isinstance(boxes, list):
+                return data
+        except CexApiError as err:
+            api_error = err
+
+        # Website fallback cannot reliably apply CeX store filters. Apply the
+        # filters for which the product cards contain enough information.
+        try:
+            boxes = await self._search_website(query, count)
+        except CexApiError as web_error:
+            if api_error is not None:
+                raise CexApiError(
+                    f"Filtered API search failed ({api_error}); "
+                    f"website fallback failed ({web_error})"
+                ) from web_error
+            raise
+
+        categories = {int(value) for value in (category_ids or [])}
+        filtered: list[dict[str, Any]] = []
+        for box in boxes:
+            if categories and box.get("categoryId") is not None:
+                try:
+                    if int(box["categoryId"]) not in categories:
+                        continue
+                except (TypeError, ValueError):
+                    pass
+
+            sell = box.get("sellPrice")
+            if sell is not None:
+                try:
+                    price = float(sell)
+                except (TypeError, ValueError):
+                    price = None
+                if price is not None:
+                    if min_price is not None and price < float(min_price):
+                        continue
+                    if max_price is not None and price > float(max_price):
+                        continue
+
+            if in_stock:
+                qty = box.get("ecomQuantityOnHand")
+                out = box.get("outOfStock")
+                if qty is not None:
+                    try:
+                        if float(qty) <= 0:
+                            continue
+                    except (TypeError, ValueError):
+                        pass
+                elif out in (1, True, "1"):
+                    continue
+
+            filtered.append(box)
+
+        def _sort_value(box: dict[str, Any]) -> Any:
+            if sort_by == "sellprice":
+                try:
+                    return float(box.get("sellPrice"))
+                except (TypeError, ValueError):
+                    return float("inf")
+            if sort_by == "boxname":
+                return str(box.get("boxName") or "").casefold()
+            if sort_by == "rating":
+                try:
+                    return float(box.get("boxRating"))
+                except (TypeError, ValueError):
+                    return -1.0
+            return 0
+
+        if sort_by != "relevance":
+            filtered.sort(
+                key=_sort_value,
+                reverse=sort_order == "desc",
+            )
+
+        prices = []
+        for box in filtered:
+            try:
+                prices.append(float(box.get("sellPrice")))
+            except (TypeError, ValueError):
+                pass
+
+        return {
+            "boxes": filtered[:count],
+            "totalRecords": len(filtered),
+            "maxPrice": max(prices) if prices else None,
+            "facets": [],
+            "websiteFallback": True,
+            "storeFilterApplied": not bool(store_ids),
+        }
+
+    async def stores(self) -> list[dict[str, Any]]:
+        """Return the CeX Portugal store list."""
+        data = await self._get("/stores")
+        stores = data.get("stores", [])
+        return stores if isinstance(stores, list) else []
+
     async def product_detail(self, product_id: str) -> dict[str, Any]:
         """Return details and current prices for one product."""
         try:

@@ -1,69 +1,243 @@
 """Sensor platform for CeX Monitor."""
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfLength
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import CexCoordinator
-from .entity import CexEntity
-
-
-@dataclass(frozen=True, kw_only=True)
-class CexSensorDescription(SensorEntityDescription):
-    """Describe a CeX sensor."""
-
-    value_fn: Callable[[dict[str, Any]], Any]
-
-
-def _detail(key: str) -> Callable[[dict[str, Any]], Any]:
-    return lambda data: data.get("detail", {}).get(key)
-
-
-def _nearest(key: str) -> Callable[[dict[str, Any]], Any]:
-    return lambda data: (data.get("stores") or [{}])[0].get(key) if data.get("stores") else None
-
-
-SENSORS: tuple[CexSensorDescription, ...] = (
-    CexSensorDescription(key="sell_price", translation_key="sell_price", native_unit_of_measurement="€", icon="mdi:cart", value_fn=_detail("sellPrice")),
-    CexSensorDescription(key="cash_price", translation_key="cash_price", native_unit_of_measurement="€", icon="mdi:cash", value_fn=_detail("cashPrice")),
-    CexSensorDescription(key="exchange_price", translation_key="exchange_price", native_unit_of_measurement="€", icon="mdi:ticket-percent", value_fn=_detail("exchangePrice")),
-    CexSensorDescription(key="online_stock", translation_key="online_stock", icon="mdi:package-variant-closed", value_fn=_detail("ecomQuantityOnHand")),
-    CexSensorDescription(key="nearest_store", translation_key="nearest_store", icon="mdi:store-marker", value_fn=_nearest("storeName")),
-    CexSensorDescription(key="nearest_store_stock", translation_key="nearest_store_stock", icon="mdi:package-variant", value_fn=_nearest("quantityOnHand")),
-    CexSensorDescription(key="nearest_store_distance", translation_key="nearest_store_distance", native_unit_of_measurement=UnitOfLength.KILOMETERS, icon="mdi:map-marker-distance", value_fn=_nearest("distance")),
+from .const import (
+    CONF_PRODUCT_ID,
+    CONF_WATCH_ID,
+    CONF_WATCH_TYPE,
+    WATCH_TYPE_PRODUCT,
+    WATCH_TYPE_SEARCH,
 )
+from .coordinator import CexCoordinator
+from .entity import CexWatchEntity
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:
-    """Set up CeX sensors."""
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Create sensors for every saved watch."""
     coordinator: CexCoordinator = entry.runtime_data
-    async_add_entities(CexSensor(coordinator, description) for description in SENSORS)
+    entities: list[SensorEntity] = []
+    for watch in coordinator.watches:
+        if watch.get(CONF_WATCH_TYPE) == WATCH_TYPE_SEARCH:
+            entities.extend(
+                [
+                    SearchResultsSensor(coordinator, watch),
+                    SearchLoadedSensor(coordinator, watch),
+                    SearchLowestPriceSensor(coordinator, watch),
+                    SearchCheapestProductSensor(coordinator, watch),
+                    SearchAvailableCountSensor(coordinator, watch),
+                    SearchNewProductsSensor(coordinator, watch),
+                ]
+            )
+        elif watch.get(CONF_WATCH_TYPE) == WATCH_TYPE_PRODUCT:
+            entities.extend(
+                [
+                    ProductValueSensor(coordinator, watch, "sellPrice", "sell_price", "mdi:cart", "€"),
+                    ProductValueSensor(coordinator, watch, "cashPrice", "cash_price", "mdi:cash", "€"),
+                    ProductValueSensor(coordinator, watch, "exchangePrice", "exchange_price", "mdi:ticket-percent", "€"),
+                    ProductValueSensor(coordinator, watch, "ecomQuantityOnHand", "online_stock", "mdi:package-variant-closed"),
+                    NearestStoreSensor(coordinator, watch),
+                    NearestStoreStockSensor(coordinator, watch),
+                    NearestStoreDistanceSensor(coordinator, watch),
+                ]
+            )
+    async_add_entities(entities)
 
 
-class CexSensor(CexEntity, SensorEntity):
-    """A sensor backed by the CeX coordinator."""
+class _SearchSensor(CexWatchEntity, SensorEntity):
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any], suffix: str) -> None:
+        super().__init__(coordinator, watch)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_{self.watch_id}_{suffix}"
 
-    entity_description: CexSensorDescription
 
-    def __init__(self, coordinator: CexCoordinator, description: CexSensorDescription) -> None:
-        super().__init__(coordinator)
-        self.entity_description = description
-        self._attr_unique_id = f"{self._product_id}_{description.key}"
+class SearchResultsSensor(_SearchSensor):
+    _attr_translation_key = "search_results"
+    _attr_icon = "mdi:magnify"
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch, "results")
+
+    @property
+    def native_value(self) -> int:
+        return int(self.watch_data.get("total_records", 0))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        products = []
+        for item in self.watch_data.get("results", [])[:20]:
+            products.append(
+                {
+                    "id": item.get("boxId"),
+                    "name": item.get("boxName"),
+                    "price": item.get("sellPrice"),
+                    "cash": item.get("cashPrice"),
+                    "voucher": item.get("exchangePrice"),
+                    "stock": item.get("ecomQuantityOnHand"),
+                    "rating": item.get("boxRating"),
+                    "category": item.get("categoryFriendlyName") or item.get("categoryName"),
+                }
+            )
+        return {
+            "loaded_results": self.watch_data.get("loaded_results", 0),
+            "website_fallback": self.watch_data.get("website_fallback", False),
+            "store_filter_applied": self.watch_data.get("store_filter_applied", True),
+            "products": products,
+        }
+
+
+class SearchLoadedSensor(_SearchSensor):
+    _attr_translation_key = "search_loaded"
+    _attr_icon = "mdi:format-list-numbered"
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch, "loaded")
+
+    @property
+    def native_value(self) -> int:
+        return int(self.watch_data.get("loaded_results", 0))
+
+
+class SearchLowestPriceSensor(_SearchSensor):
+    _attr_translation_key = "search_lowest_price"
+    _attr_icon = "mdi:tag-arrow-down"
+    _attr_native_unit_of_measurement = "€"
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch, "lowest_price")
+
+    @property
+    def native_value(self) -> float | None:
+        return self.watch_data.get("lowest_price")
+
+
+class SearchCheapestProductSensor(_SearchSensor):
+    _attr_translation_key = "search_cheapest_product"
+    _attr_icon = "mdi:shopping-search"
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch, "cheapest_product")
+
+    @property
+    def native_value(self) -> str | None:
+        return self.watch_data.get("cheapest_product")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "product_id": self.watch_data.get("cheapest_product_id"),
+            "price": self.watch_data.get("lowest_price"),
+        }
+
+
+class SearchAvailableCountSensor(_SearchSensor):
+    _attr_translation_key = "search_available_count"
+    _attr_icon = "mdi:package-check"
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch, "available_count")
+
+    @property
+    def native_value(self) -> int:
+        return int(self.watch_data.get("available_count", 0))
+
+
+class SearchNewProductsSensor(_SearchSensor):
+    _attr_translation_key = "search_new_products"
+    _attr_icon = "mdi:new-box"
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch, "new_products")
+
+    @property
+    def native_value(self) -> int:
+        return int(self.watch_data.get("new_products_count", 0))
+
+
+class ProductValueSensor(CexWatchEntity, SensorEntity):
+    def __init__(
+        self,
+        coordinator: CexCoordinator,
+        watch: dict[str, Any],
+        key: str,
+        translation_key: str,
+        icon: str,
+        unit: str | None = None,
+    ) -> None:
+        super().__init__(coordinator, watch)
+        self.key = key
+        self._attr_translation_key = translation_key
+        self._attr_icon = icon
+        self._attr_native_unit_of_measurement = unit
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_{self.watch_id}_{key}"
 
     @property
     def native_value(self) -> Any:
-        return self.entity_description.value_fn(self.coordinator.data)
+        return self.watch_data.get("detail", {}).get(self.key)
+
+
+class NearestStoreSensor(CexWatchEntity, SensorEntity):
+    _attr_translation_key = "nearest_store"
+    _attr_icon = "mdi:store-marker"
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_{self.watch_id}_nearest_store"
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
-        if self.entity_description.key != "nearest_store":
-            return None
-        stores = self.coordinator.data.get("stores", [])[:10]
-        return {"stores": [{"name": s.get("storeName"), "stock": s.get("quantityOnHand"), "distance_km": s.get("distance"), "store_id": s.get("storeId")} for s in stores]}
+    def native_value(self) -> str | None:
+        stores = self.watch_data.get("stores", [])
+        return stores[0].get("storeName") if stores else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "stores": [
+                {
+                    "id": store.get("storeId"),
+                    "name": store.get("storeName"),
+                    "stock": store.get("quantityOnHand"),
+                    "distance_km": store.get("distance"),
+                }
+                for store in self.watch_data.get("stores", [])[:10]
+            ]
+        }
+
+
+class NearestStoreStockSensor(CexWatchEntity, SensorEntity):
+    _attr_translation_key = "nearest_store_stock"
+    _attr_icon = "mdi:package-variant"
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_{self.watch_id}_nearest_store_stock"
+
+    @property
+    def native_value(self) -> Any:
+        stores = self.watch_data.get("stores", [])
+        return stores[0].get("quantityOnHand") if stores else None
+
+
+class NearestStoreDistanceSensor(CexWatchEntity, SensorEntity):
+    _attr_translation_key = "nearest_store_distance"
+    _attr_icon = "mdi:map-marker-distance"
+    _attr_native_unit_of_measurement = UnitOfLength.KILOMETERS
+
+    def __init__(self, coordinator: CexCoordinator, watch: dict[str, Any]) -> None:
+        super().__init__(coordinator, watch)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_{self.watch_id}_nearest_store_distance"
+
+    @property
+    def native_value(self) -> Any:
+        stores = self.watch_data.get("stores", [])
+        return stores[0].get("distance") if stores else None

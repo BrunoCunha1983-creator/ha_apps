@@ -7,23 +7,25 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import CexCoordinator
-from .entity import CexEntity
+from .entity import CexRootEntity
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback) -> None:
-    """Set up CeX buttons."""
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
     coordinator: CexCoordinator = entry.runtime_data
     async_add_entities([CexRefreshButton(coordinator)])
 
 
-class CexRefreshButton(CexEntity, ButtonEntity):
+class CexRefreshButton(CexRootEntity, ButtonEntity):
     _attr_translation_key = "refresh"
     _attr_icon = "mdi:refresh"
 
     def __init__(self, coordinator: CexCoordinator) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{self._product_id}_refresh"
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_refresh"
 
     async def async_press(self) -> None:
-        """Refresh current prices and stock."""
         await self.coordinator.async_request_refresh()

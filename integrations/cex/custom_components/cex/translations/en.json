@@ -2,14 +2,64 @@
   "title": "CeX Monitor",
   "config": {
     "step": {
-      "user": {"title": "Search CeX product", "description": "Search the CeX Portugal catalogue and choose a product to monitor.", "data": {"search_query": "Product search"}},
-      "product": {"title": "Choose product", "description": "Select the product and optionally set a target price.", "data": {"product_id": "Product", "target_price": "Target price"}}
+      "user": {
+        "title": "CeX Portugal",
+        "description": "Create the watchlist with its first saved search.",
+        "data": {
+          "search_query": "Search",
+          "name": "Search name",
+          "in_stock": "In stock only",
+          "max_price": "Maximum price",
+          "target_price": "Target price",
+          "sort_by": "Sort by"
+        }
+      }
     },
-    "error": {"cannot_connect": "Could not connect to CeX.", "no_results": "The search returned no products."},
-    "abort": {"already_configured": "This product is already being monitored."}
+    "error": {"cannot_connect": "Could not connect to CeX.", "no_results": "No products found."},
+    "abort": {"already_configured": "The CeX Portugal watchlist is already configured."}
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage CeX Monitor",
+        "menu_options": {
+          "add_search": "Add saved search",
+          "add_product": "Add specific product",
+          "remove_watch": "Remove search/product",
+          "settings": "Settings"
+        }
+      },
+      "add_search": {"title": "Add saved search", "data": {"query": "Search", "name": "Name"}},
+      "search_filters": {
+        "title": "Search filters",
+        "data": {
+          "in_stock": "In stock only",
+          "min_price": "Minimum price",
+          "max_price": "Maximum price",
+          "target_price": "Alert target price",
+          "radius_km": "Radius from Home Assistant location",
+          "sort_by": "Sort by",
+          "sort_order": "Sort order",
+          "category_ids": "Categories",
+          "store_ids": "Stores"
+        }
+      },
+      "add_product": {"title": "Add product", "data": {"search_query": "Product search"}},
+      "product_select": {"title": "Choose product", "data": {"product_id": "Product", "target_price": "Target price"}},
+      "remove_watch": {"title": "Remove from watchlist", "data": {"id": "Search or product"}},
+      "settings": {"title": "Settings", "data": {"scan_interval": "Update interval", "max_results": "Maximum results per search"}}
+    },
+    "error": {"cannot_connect": "Could not connect to CeX.", "no_results": "No results."},
+    "abort": {"no_watches": "The watchlist is empty."}
   },
   "entity": {
     "sensor": {
+      "search_results": {"name": "Results"},
+      "search_loaded": {"name": "Loaded results"},
+      "search_lowest_price": {"name": "Lowest price"},
+      "search_cheapest_product": {"name": "Cheapest product"},
+      "search_available_count": {"name": "Available products"},
+      "search_new_products": {"name": "New products"},
       "sell_price": {"name": "Selling price"},
       "cash_price": {"name": "Cash value"},
       "exchange_price": {"name": "Voucher value"},
@@ -19,6 +69,8 @@
       "nearest_store_distance": {"name": "Nearest store distance"}
     },
     "binary_sensor": {
+      "search_matches": {"name": "Has results"},
+      "search_has_new_products": {"name": "Has new products"},
       "online_available": {"name": "Available online"},
       "nearby_available": {"name": "Available nearby"},
       "target_price_reached": {"name": "Target price reached"}

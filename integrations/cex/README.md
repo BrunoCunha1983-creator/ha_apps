@@ -1,76 +1,118 @@
 # CeX Monitor for Home Assistant
 
-Integração não oficial para monitorizar produtos da **CeX Portugal** no Home Assistant.
+Integração não oficial para a **CeX Portugal**, organizada no monorepo `ha_apps`.
 
-## Funcionalidades da v0.1.1
+## v0.2.0 — Watchlist
 
-- configuração totalmente pela UI do Home Assistant;
-- pesquisa de produtos CeX durante a configuração;
-- fallback automático para o site público da CeX quando o endpoint de pesquisa WSS é bloqueado;
-- preço atual de venda na CeX;
-- valor que a CeX paga em dinheiro;
-- valor de troca/voucher;
+A v0.2 deixa de obrigar a instalar uma entrada da integração por cada produto. Existe uma **watchlist CeX** e dentro dela podes guardar várias pesquisas e vários produtos específicos.
+
+### Pesquisas guardadas
+
+Cada pesquisa pode usar:
+
+- texto livre;
+- apenas produtos em stock;
+- categoria(s);
+- loja(s);
+- raio em km a partir da localização configurada no Home Assistant;
+- preço mínimo e máximo;
+- preço-alvo para alertas;
+- ordenação por relevância, preço, nome ou avaliação;
+- ordem ascendente/descendente.
+
+A API WSS da CeX suporta os filtros `categoryIds`, `inStock`, `storeIds`, `minPrice`, `maxPrice`, `sortBy` e `sortOrder`. Quando a pesquisa WSS é bloqueada pelo Cloudflare, a integração mantém o fallback para o site público. Nesse fallback, filtros de preço/categoria/stock são aplicados localmente quando os dados existem; o filtro de loja pode ficar indisponível.
+
+### Produtos específicos
+
+Também podes guardar um SKU/produto concreto e acompanhar:
+
+- preço de venda;
+- quanto a CeX paga em dinheiro;
+- valor em voucher;
 - stock online;
-- disponibilidade em lojas próximas, usando a latitude/longitude configuradas no Home Assistant;
-- loja mais próxima com stock, quantidade e distância;
-- `binary_sensor` de disponibilidade online e em loja;
-- preço-alvo opcional com `binary_sensor` próprio;
-- botão **Atualizar agora**;
-- atualização automática de 30 em 30 minutos;
-- imagem do produto nas entidades quando fornecida pela CeX.
+- loja mais próxima com stock;
+- quantidade e distância;
+- preço-alvo.
 
-## Instalação com HACS
+## Entidades de uma pesquisa
 
-1. Abre **HACS → Integrações**.
-2. Em **Repositórios personalizados**, adiciona `BrunoCunha1983-creator/ha-cex` como **Integration**.
-3. Instala/atualiza **CeX Monitor**.
-4. **Reinicia o Home Assistant**.
-5. Vai a **Definições → Dispositivos e Serviços → Adicionar integração** e procura **CeX Monitor**.
+Cada pesquisa cria:
+
+- `sensor.*_resultados`;
+- `sensor.*_resultados_carregados`;
+- `sensor.*_preco_mais_baixo`;
+- `sensor.*_produto_mais_barato`;
+- `sensor.*_produtos_disponiveis`;
+- `sensor.*_novos_produtos`;
+- `binary_sensor.*_tem_resultados`;
+- `binary_sensor.*_tem_novos_produtos`;
+- `binary_sensor.*_preco_alvo_atingido` quando configurado.
+
+O sensor de resultados guarda nos atributos os primeiros 20 produtos com SKU, nome, preço, cash, voucher, stock, rating e categoria.
+
+## Eventos para automações
+
+A integração dispara eventos no Home Assistant depois de existir uma atualização anterior para comparação:
+
+- `cex_new_product` — apareceu um SKU novo numa pesquisa;
+- `cex_price_drop` — um produto baixou de preço;
+- `cex_restock` — um produto específico voltou a ter stock online;
+- `cex_target_price` — o preço passou para o valor-alvo ou abaixo.
+
+Exemplo:
+
+```yaml
+automation:
+  - alias: "CeX - novo produto"
+    triggers:
+      - trigger: event
+        event_type: cex_new_product
+    actions:
+      - action: notify.mobile_app_telemovel
+        data:
+          title: "Novo produto na CeX"
+          message: >
+            {{ trigger.event.data.watch_name }}:
+            {{ trigger.event.data.count }} novo(s) produto(s).
+```
+
+## Gerir a watchlist
+
+Depois da instalação:
+
+**Definições → Dispositivos e Serviços → CeX Monitor → Configurar**
+
+O menu permite:
+
+1. adicionar pesquisa guardada;
+2. adicionar produto específico;
+3. remover uma pesquisa/produto;
+4. definir intervalo de atualização e máximo de resultados.
+
+A alteração das opções recarrega automaticamente a integração.
+
+## Migração da v0.1
+
+Entradas antigas que monitorizavam um único produto são migradas automaticamente para uma watchlist com esse produto. Podem continuar a existir como entradas separadas; novas instalações usam uma única entrada **CeX Portugal**.
+
+## Ligação à CeX
+
+A integração tenta primeiro os endpoints WSS usados pelo site. Para pesquisa e detalhe de produto mantém o fallback browser-like para `pt.webuy.com` quando o endpoint WSS é bloqueado.
+
+A integração não usa login, conta CeX, checkout, encomendas ou dados pessoais. É um projeto não oficial e os endpoints da CeX podem mudar sem aviso.
 
 ## Instalação manual
 
-1. Copiar `custom_components/cex` para `/config/custom_components/cex` no Home Assistant.
-2. Reiniciar o Home Assistant.
-3. Abrir **Definições → Dispositivos e Serviços → Adicionar integração**.
-4. Procurar por **CeX Monitor**.
-5. Pesquisar o produto, selecionar o resultado e, se quiseres, indicar um preço-alvo.
+Copia:
 
-Para monitorizar vários produtos, adiciona a integração novamente para cada produto.
+`integrations/cex/custom_components/cex`
 
-## Entidades criadas
+para:
 
-Por produto são criados sensores equivalentes a:
+`/config/custom_components/cex`
 
-- `sensor.<produto>_preco_de_venda`
-- `sensor.<produto>_valor_em_dinheiro`
-- `sensor.<produto>_valor_em_voucher`
-- `sensor.<produto>_stock_online`
-- `sensor.<produto>_loja_mais_proxima_com_stock`
-- `sensor.<produto>_stock_da_loja_mais_proxima`
-- `sensor.<produto>_distancia_da_loja_mais_proxima`
-- `binary_sensor.<produto>_disponivel_online`
-- `binary_sensor.<produto>_disponivel_numa_loja_proxima`
-- `binary_sensor.<produto>_preco_alvo_atingido` (quando configurado)
-- `button.<produto>_atualizar_agora`
+e reinicia o Home Assistant.
 
-## Como funciona a ligação à CeX
+## HACS
 
-A integração tenta primeiro os endpoints web WSS usados pela CeX. Se a pesquisa for bloqueada por proteção anti-bot/Cloudflare, a v0.1.1 tenta automaticamente a página pública `pt.webuy.com/search` e extrai os resultados server-side.
-
-Para detalhes de produto também existe fallback para a página pública do produto. A consulta de stock de lojas continua a usar o endpoint WSS; se esse endpoint estiver temporariamente bloqueado, os restantes sensores do produto continuam a atualizar e os sensores de loja ficam sem dados até a ligação recuperar.
-
-Não são usados login, conta CeX, checkout, encomendas ou dados pessoais.
-
-## Diagnóstico
-
-Se a pesquisa ainda falhar, consulta **Definições → Sistema → Registos** e procura por `CeX product search failed`. A mensagem inclui o erro do endpoint WSS e, quando aplicável, o erro do fallback do website.
-
-## Próximos passos
-
-- watchlists/pesquisas dinâmicas;
-- alertas de novos resultados;
-- histórico e variação de preço;
-- filtros por raio/loja;
-- ações para pesquisa e refresh;
-- suporte opcional a outras regiões CeX.
-
+A subpasta continua preparada para publicação/mirror HACS através do repositório dedicado da integração.
