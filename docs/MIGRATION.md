@@ -1,27 +1,302 @@
 # Plano de migração para ha_apps
 
-Este ficheiro serve para consolidar os projetos de Home Assistant sem perder o histórico nem misturar forks externos com código mantido por nós.
+Este ficheiro é o inventário principal dos projetos relacionados com Home Assistant.
 
-## 1. Projetos próprios / candidatos a consolidar
+## Estrutura alvo
 
-### Custom integrations
-- `ha-eredes`
-- `hass-geolocator`
-- `ha-sql_json`
-- `ha-uber-eats`
-- `ha-custom-component-coverflex`
-- `home-assistant-custom-components-door-window-advisor`
-- `homeassistant-plant`
-- `ha-mcp`
+- `integrations/` — custom integrations / `custom_components`
+- `cards/` — Lovelace/frontend
+- `esphome/` — ESPHome e presença
+- `addons/` — add-ons HA OS/Supervisor
+- `services/` — serviços auxiliares usados pelo HA (Traccar, geocoder, bridges, etc.)
+- `automations/` — automações reutilizáveis
+- `blueprints/` — blueprints
+- `packages/` — packages
+- `dashboards/` — Lovelace/dashboards
+- `installations/` — configurações completas Casa/Caravana
+- `external/` — forks/dependências externas que não queremos absorver diretamente
+
+# A. Integrações já existentes no GitHub
+
+## Confirmadas como custom integrations
+
+### ha-residuosPT
+- Repositório antigo: `ha-residuosPT`
+- Domain atual: `recolha_residuos_pt`
+- Destino: `integrations/recolha_residuos_pt/`
+
+### astro_tracker
+- Repositório antigo: `astro_tracker`
+- Domain atual: `astro_tracker`
+- Inclui também conteúdo Lovelace.
+- Destino principal: `integrations/astro_tracker/`
+- Lovelace reutilizável: `dashboards/astro_tracker/`
+
+### ha-offcloud
+- Repositório antigo: `ha-offcloud`
+- Domain atual: `offcloud`
+- Destino: `integrations/offcloud/`
+
+### ha-plugins
+Repositório misto. Não deve ser copiado inteiro para uma única pasta.
+
+Conteúdo confirmado:
+- `custom_components/pingo_doce_plus` → `integrations/pingo_doce_plus/`
+- `ha-sip/` e componentes SIP → avaliar para `addons/` ou `services/`
+- `pingo-doce/` / `pingo_doce_plus/` → manter apenas a implementação ativa/canónica
+
+### ha-eredes
+- Destino: `integrations/eredes_pt/`
+
+### ha-sql_json
+- Destino: `integrations/sql_json/`
+
+### ha-uber-eats
+- Destino: `integrations/uber_eats/`
+
+### ha-custom-component-coverflex
+- Destino: `integrations/coverflex/`
+
+### hass-geolocator
+- Destino: `integrations/geolocator/`
+
+### ha-life360
+- Verificar se é fork/upstream antes de absorver.
+- Se for versão mantida por nós: `integrations/life360/`
+
+### WeatherXM-Home-Assistant
+- Verificar origem/fork.
+- Destino se mantido por nós: `integrations/weatherxm/`
+
+### home-assistant-custom-components-door-window-advisor
+- Destino se mantido por nós: `integrations/door_window_advisor/`
+
+### homeassistant-plant
+- Verificar upstream.
+- Destino se mantido por nós: `integrations/plant/`
+
+### ha-mcp
+- Projeto HA/MCP.
+- Destino previsto: `integrations/ha_mcp/` e/ou `services/mcp/`, conforme separação do código.
+
+# B. Integrações/projetos HA recuperados das nossas conversas
+
+## Localização, GPS e GSM
+
+### gpsd_advanced
+Projeto **GPSD Advanced**.
+- GPSD TCP
+- `device_tracker`
+- latitude/longitude
+- altitude
+- velocidade
+- rumo
+- satélites
+- HDOP/PDOP/VDOP
+- sensores de viagem/direção
+- mapa no HA
+- GPS USB/u-blox
+- suporte a GPSD remoto
+
+Destino: `integrations/gpsd_advanced/`
+
+Nomes/experiências anteriores a consolidar aqui:
+- `gpsd_tracker`
+- `USBGPS`
+- GPSD Source Manager
+- GPSD Advanced
+- GPSD Weather Tracker (parte GPS)
+
+### gsm_tracker
+Projeto **GSM Tracker** para autocaravana/veículos.
+- ESP32 + GSM/GPRS/LTE
+- GPS
+- MQTT/HA
+- `device_tracker`
+- telemetria
+- possibilidade de OBD2
+- localização por rede/célula como fallback
+
+Destino:
+- integração HA: `integrations/gsm_tracker/`
+- firmware ESPHome/ESP32: `esphome/gsm_tracker/`
+
+### cellular_router
+Integração universal para routers/modems 4G/5G.
+- estado SIM
+- operadora
+- sinal
+- tecnologia celular
+- GPS quando disponível
+- dados de rede
+- possibilidade SNMP/HTTP/serial/USB
+
+Destino: `integrations/cellular_router/`
+
+### gpsd_weather_tracker
+Projeto combinado GPS + meteorologia.
+- posição via GPSD
+- reverse geocoding
+- weather por posição
+- `device_tracker`
+
+A funcionalidade comum de GPS deve reutilizar `gpsd_advanced`.
+
+Destino previsto: `integrations/gpsd_weather_tracker/`
+
+## Transportes e localização
+
+### metro_lisboa
+- estado das linhas
+- estações
+- tempos/dados em tempo real
+- autenticação/API oficial
+- sensores e `device_tracker` de estações
+
+Destino: `integrations/metro_lisboa/`
+
+### carris
+Projeto de dados Carris/Carris Metropolitana.
+Destino: `integrations/carris/`
+
+### traccar-geocoder
+O repositório atual é um serviço Docker/Rust de reverse geocoding, não um `custom_component`.
+
+Destino correto: `services/traccar_geocoder/`
+
+Pode ser consumido por:
+- GPSD Advanced
+- GSM Tracker
+- Traccar
+- autocaravana
+- outros `device_tracker`
+
+## Serviços públicos / Portugal
+
+### simar
+- avisos/roturas
+- freguesias
+- sensores/binary sensors
+- mapa
+- config flow
+
+Destino: `integrations/simar/`
+
+### fogos_pt
+- Fogos.pt
+- incêndios
+- zonas/raio
+- alertas
+- trackers/mapa
+
+Destino: `integrations/fogos_pt/`
+
+### ocorrencias_ativas_pt
+- incêndios
+- acidentes
+- inundações
+- deslizamentos
+- sensores globais/por zona
+- trackers no mapa
+- notificações
+
+Destino: `integrations/ocorrencias_ativas_pt/`
+
+### eredes_pt
+Projeto E-Redes / energia.
+Destino: `integrations/eredes_pt/`
+
+### recolha_residuos_pt
+Já existe em `ha-residuosPT`.
+Destino: `integrations/recolha_residuos_pt/`
+
+## Casa / serviços / consumo
+
+### offcloud
+Já existe em `ha-offcloud`.
+Destino: `integrations/offcloud/`
+
+### pingo_doce_plus
+Já existe dentro de `ha-plugins`.
+Destino: `integrations/pingo_doce_plus/`
+
+### candy_simplyfi
+Existe também o repositório `CandySimplyFi-tool`.
+Objetivo: integração/local control Candy Simply-Fi.
+Destino previsto: `integrations/candy_simplyfi/` e ferramentas auxiliares em `services/candy_simplyfi/`.
+
+### nosnet
+Projeto para Internet/router NOS e respetivas entidades.
+Destino previsto: `integrations/nosnet/`.
+
+### mold_risk
+Projeto/sensores de risco de bolor.
+Destino previsto: `integrations/mold_risk/` ou `packages/mold_risk/`, consoante a implementação final.
+
+## PBX / telefonia dentro do Home Assistant
+
+### freepbx_bridge
+- Asterisk/FreePBX
+- AMI/ARI
+- chamadas/eventos
+- estado de extensões
+
+Destino: `integrations/freepbx_bridge/`
+
+### ht503
+Integração HA para Grandstream HT503.
+- FXS/FXO
+- SIP
+- firmware
+- uptime
+- estado
+- ações de refresh/reboot
+
+Destino: `integrations/ht503/`
+
+### ha-sip
+Parte do atual `ha-plugins`.
+Como inclui gateway/serviço, deve ser separado entre:
+- `integrations/ha_sip/` quando houver componente HA
+- `services/ha_sip/` para backend/gateway
+- `addons/ha_sip/` se existir pacote Supervisor
+
+O projeto independente `gsm2sip-gateway` continua fora do `ha_apps` como produto Asterisk/GSM/SIP, embora possa ter uma integração HA cliente neste monorepo.
+
+## Voz / bots / media
+
+Projetos atuais relacionados:
 - `voice-satellite-card-integration`
-- `WeatherXM-Home-Assistant`
-- `Home-Assistant-custom-components-Antistorm`
-- `hassio-whoop`
-- `ha-residuosPT`
+- `Voice-Satellite-Card-for-Home-Assistant`
+- `HAMusicAssistantJukebox`
+- `rgnlabs-mediaplayer`
+- `spotify-voice-assistant`
+- `linux-voice-assistant`
+- `dash-voice`
+- `hass_discord_bot`
+- `homeassistant-discord-bot`
 
-Destino: `integrations/<domain>/`.
+Separar entre:
+- `integrations/`
+- `cards/`
+- `services/`
+conforme cada componente.
 
-### Lovelace / frontend
+# C. ESPHome
+
+Projetos atuais/planeados:
+- `esphome-ugreen-hdmi-switcher`
+- `esphome-presence`
+- ESPresense compatível com ESPHome
+- BLE presence
+- GSM Tracker firmware
+- sensores adicionais DHT22/lux/etc.
+
+Destino: `esphome/<projeto>/`
+
+# D. Lovelace / frontend
+
+Candidatos atuais:
 - `dual-gauge-card`
 - `Voice-Satellite-Card-for-Home-Assistant`
 - `au-fire-risk-card`
@@ -37,37 +312,27 @@ Destino: `integrations/<domain>/`.
 - `alarm-clock-card`
 - `home-assistant-cards`
 
-Destino: `cards/<nome>/`.
+Destino: `cards/<nome>/`
 
-### ESPHome / hardware
-- `esphome-ugreen-hdmi-switcher`
+Antes de absorver forks, confirmar se queremos realmente manter uma versão própria.
 
-Destino: `esphome/<nome>/`.
+# E. Instalações completas
 
-### Voz / media / satélites
-- `HAMusicAssistantJukebox`
-- `rgnlabs-mediaplayer`
-- `spotify-voice-assistant`
-- `linux-voice-assistant`
-- `dash-voice`
+- `HassIO-Casa` → `installations/casa/`
+- `HassIO-Caravana` → `installations/caravana/`
 
-Destino conforme o conteúdo: `integrations/`, `cards/` ou `scripts/`.
+Antes de migrar:
+- remover secrets
+- tokens
+- passwords
+- API keys
+- identificadores privados
 
-### Configurações completas de instalações HA
-- `HassIO-Casa`
-- `HassIO-Caravana`
+# F. Forks/dependências externas
 
-Estas não devem ser misturadas com custom integrations. Destino recomendado:
-- `installations/casa/`
-- `installations/caravana/`
+Não absorver automaticamente forks só para esconder repositórios.
 
-Antes de importar, remover segredos, tokens, passwords, chaves API e dados privados.
-
-## 2. Forks / dependências externas
-
-Projetos externos que apenas queremos acompanhar devem continuar como forks independentes enquanto precisarmos de sincronização com o upstream. No `ha_apps`, manter apenas um índice em `external/`.
-
-Exemplos que precisam de verificação antes de serem importados:
+Exemplos:
 - `hass-roborock`
 - `room-assistant`
 - `HASS.Agent`
@@ -76,24 +341,25 @@ Exemplos que precisam de verificação antes de serem importados:
 - `alerts.home-assistant.io`
 - `Home-Assistant-Mail-And-Packages`
 
-## 3. Regra de migração
+Manter referência em `external/` e só criar uma versão interna quando houver alterações nossas que justifiquem manutenção própria.
+
+# G. Regra de migração
 
 Para cada repositório:
-1. confirmar se é projeto nosso ou fork;
-2. identificar o tipo de projeto;
-3. verificar segredos e ficheiros grandes;
-4. importar para a subpasta correta;
-5. testar Home Assistant / HACS quando aplicável;
-6. só depois marcar o repositório antigo como legado/arquivo.
+1. identificar se é nosso, fork ou dependência;
+2. identificar o tipo real;
+3. verificar secrets/credenciais;
+4. importar para a pasta correta;
+5. adaptar imports/workflows/HACS;
+6. testar;
+7. só então marcar o repositório antigo como legado/arquivo.
 
-Nunca apagar o repositório antigo antes de confirmar que o código consolidado funciona.
+Nunca apagar o repositório antigo antes da validação.
 
-## 4. Outros grupos do GitHub
+# H. Projetos que ficam fora de ha_apps
 
-Os projetos que não são Home Assistant devem ficar separados por área:
-
-- **FiveM / Zombie:** `fivem-autonomous-developer`, `The-Apocalypse-Project`, `Total-Apocalypse`, scripts QBCore/ESX e bots FiveM.
-- **Proxmox / servidores / IA:** `Prox-AI`, `mcp-proxmox`, `ProxmoxVE`, `ProxmoxVED`, `pimox7`.
-- **Asterisk / GSM / SIP:** `gsm2sip-gateway`, `asterisk`, `asterisk_v1`, `asterisk-chan-dongle`, `asterisk-chan-dongle-16`, `chan_dongle`, `AVA-AI-Voice-Agent-for-Asterisk`, `ht503-asterisk`.
-- **Farming Simulator 25:** `AutoDrive_Course_Editor` e futuros mods FS25.
-- **Windows / rede / utilitários:** `Activador_windows_vps`, `script_anti_ip_search`, `ip_win_bloquer`, VPN/DDNS e outras ferramentas.
+- **FiveM / Zombie** → projetos FiveM.
+- **Proxmox / servidores / IA** → Prox-AI, mcp-proxmox, ProxmoxVE, etc.
+- **Asterisk / GSM / SIP standalone** → gsm2sip-gateway, Asterisk, chan_dongle, AVA, etc.
+- **Farming Simulator 25** → mods e ferramentas FS25.
+- **Windows / rede / utilitários** → ferramentas Windows, VPN, DDNS, scripts de rede.
