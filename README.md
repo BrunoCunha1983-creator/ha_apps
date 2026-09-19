@@ -14,11 +14,13 @@ ha_apps/
 ├── cards/          # Lovelace / frontend cards
 ├── esphome/        # Componentes externos, YAML e projetos ESPHome
 ├── addons/         # Add-ons para Home Assistant OS / Supervisor
+├── services/       # Serviços auxiliares: bridges, Traccar/geocoder, backends
 ├── automations/    # Automações reutilizáveis
 ├── blueprints/     # Blueprints
 ├── packages/       # Packages Home Assistant
 ├── scripts/        # Scripts e ferramentas auxiliares para HA
 ├── dashboards/     # Dashboards / exemplos Lovelace
+├── installations/  # Configurações completas Casa/Caravana
 ├── docs/           # Documentação e plano de migração
 └── external/       # Índice de forks/projetos externos relacionados com HA
 ```
@@ -28,6 +30,27 @@ ha_apps/
 - `integrations/timezone_change` — gestão de fusos horários, mudanças de hora/DST e localização móvel através de `device_tracker`.
 - `integrations/cex` — monitorização de produtos CeX Portugal: preços, stock online, disponibilidade em lojas próximas e preço-alvo.
 
+## Projetos a consolidar
+
+O inventário completo está em [docs/MIGRATION.md](docs/MIGRATION.md).
+
+Inclui, entre outros:
+- GPSD Advanced
+- GSM Tracker
+- Metro Lisboa
+- SIMAR
+- Fogos.pt
+- Ocorrências Ativas PT
+- E-Redes
+- Offcloud
+- Resíduos PT
+- Astro Tracker
+- Pingo Doce Plus
+- FreePBX/Asterisk bridge
+- HT503
+- Traccar Geocoder
+- ESPHome Presence
+
 ## Regra de organização
 
 - Projeto novo de Home Assistant criado por nós → fica neste repositório.
@@ -35,15 +58,13 @@ ha_apps/
 - Lovelace card → `cards/<nome>/`.
 - ESPHome → `esphome/<nome>/`.
 - Add-on → `addons/<nome>/`.
+- Serviço auxiliar de HA → `services/<nome>/`.
 - Automação/blueprint/package → pasta respetiva.
-- Fork externo que queremos acompanhar → não é misturado cegamente com o nosso código; fica referenciado em `external/` ou é importado apenas quando decidirmos manter uma versão própria.
+- Configuração completa → `installations/<nome>/`.
+- Fork externo → manter referenciado em `external/` até decidirmos manter uma versão própria.
 
 ## HACS
 
 Este repositório funciona como **monorepo de desenvolvimento**.
 
 Projetos destinados a distribuição individual pelo HACS podem ser publicados/sincronizados para repositórios próprios a partir das respetivas subpastas. Assim conseguimos manter o GitHub organizado sem sacrificar a estrutura esperada pelas ferramentas de distribuição.
-
-## Migração
-
-O inventário dos repositórios antigos e o respetivo destino está em [docs/MIGRATION.md](docs/MIGRATION.md).
