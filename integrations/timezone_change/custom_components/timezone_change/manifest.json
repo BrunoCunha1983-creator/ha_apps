@@ -1,0 +1,15 @@
+{
+  "domain": "timezone_change",
+  "name": "Timezone & Clock Change",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/IceTuning/ha-timezone-change",
+  "integration_type": "helper",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/IceTuning/ha-timezone-change/issues",
+  "requirements": [
+    "tzfpy==2.1.0"
+  ],
+  "version": "0.1.0"
+}

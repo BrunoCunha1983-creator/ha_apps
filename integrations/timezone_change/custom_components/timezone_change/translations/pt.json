@@ -1,0 +1,48 @@
+{
+  "title": "Timezone & Clock Change",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Adicionar fonte de fuso horário",
+        "description": "Escolhe se a localização é a do Home Assistant, um fuso fixo ou um device_tracker GPS.",
+        "data": {"name": "Nome", "mode": "Fonte"}
+      },
+      "fixed": {
+        "title": "Fuso horário fixo",
+        "description": "Usa um nome IANA, por exemplo Europe/Lisbon ou Europe/Paris.",
+        "data": {"time_zone": "Fuso horário"}
+      },
+      "tracker": {
+        "title": "Device tracker móvel",
+        "description": "Seleciona um device_tracker que exponha latitude e longitude.",
+        "data": {"tracker_entity_id": "Device tracker"}
+      }
+    },
+    "error": {
+      "invalid_timezone": "Fuso horário inválido.",
+      "tracker_not_found": "O device_tracker não existe.",
+      "tracker_no_gps": "O device_tracker não fornece latitude e longitude."
+    },
+    "abort": {"already_configured": "Esta fonte já está configurada."}
+  },
+  "selector": {
+    "mode": {"options": {"home": "Fuso do Home Assistant", "fixed": "Fuso horário fixo", "tracker": "Device tracker GPS"}}
+  },
+  "entity": {
+    "sensor": {
+      "timezone": {"name": "Fuso horário"},
+      "local_time": {"name": "Hora local"},
+      "utc_offset": {"name": "Desvio UTC"},
+      "abbreviation": {"name": "Abreviatura"},
+      "next_transition": {"name": "Próxima mudança de hora"},
+      "days_to_transition": {"name": "Dias até à mudança"},
+      "transition_direction": {"name": "Direção da próxima mudança"},
+      "previous_transition": {"name": "Última mudança de hora"},
+      "home_time": {"name": "Hora em casa"},
+      "difference_from_home": {"name": "Diferença horária para casa"}
+    },
+    "binary_sensor": {"dst_active": {"name": "Horário de verão"}},
+    "event": {"clock_change_event": {"name": "Mudanças de fuso e hora"}},
+    "calendar": {"clock_change_calendar": {"name": "Mudanças de hora"}}
+  }
+}
