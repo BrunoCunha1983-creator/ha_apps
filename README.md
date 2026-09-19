@@ -68,3 +68,27 @@ Inclui, entre outros:
 Este repositório funciona como **monorepo de desenvolvimento**.
 
 Projetos destinados a distribuição individual pelo HACS podem ser publicados/sincronizados para repositórios próprios a partir das respetivas subpastas. Assim conseguimos manter o GitHub organizado sem sacrificar a estrutura esperada pelas ferramentas de distribuição.
+
+
+## Instalação por HACS
+
+**Não adicionar `ha_apps` diretamente aos Repositórios personalizados do HACS.**
+
+O HACS valida a raiz de cada repositório e uma integração HACS precisa de ter uma estrutura semelhante a:
+
+```text
+<repo>/
+├── custom_components/
+│   └── <domain>/
+├── hacs.json
+├── README.md
+└── LICENSE
+```
+
+Como `ha_apps` é um monorepo, as integrações estão dentro de `integrations/<nome>/`. Por isso cada integração destinada ao HACS terá um pequeno repositório de distribuição próprio, sincronizado a partir deste monorepo.
+
+Para as duas integrações atuais:
+- `integrations/cex/` → repositório de distribuição recomendado: `ha-cex`
+- `integrations/timezone_change/` → repositório de distribuição recomendado: `ha-timezone-change`
+
+Ver [docs/HACS_DISTRIBUTION.md](docs/HACS_DISTRIBUTION.md).
