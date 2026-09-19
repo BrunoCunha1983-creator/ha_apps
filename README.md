@@ -1,94 +1,62 @@
-# ha_apps
+# CeX Monitor for Home Assistant
 
-Monorepo principal dos projetos relacionados com **Home Assistant**.
+Integração não oficial para monitorizar produtos da **CeX Portugal** no Home Assistant.
 
-A ideia é manter aqui o desenvolvimento organizado por tipo de projeto e evitar criar um repositório separado para cada pequena integração, cartão, automação ou componente.
+## Funcionalidades da v0.1.0
 
-## Estrutura
+- configuração totalmente pela UI do Home Assistant;
+- pesquisa de produtos CeX durante a configuração;
+- preço atual de venda na CeX;
+- valor que a CeX paga em dinheiro;
+- valor de troca/voucher;
+- stock online;
+- disponibilidade em lojas próximas, usando a latitude/longitude configuradas no Home Assistant;
+- loja mais próxima com stock, quantidade e distância;
+- `binary_sensor` de disponibilidade online e em loja;
+- preço-alvo opcional com `binary_sensor` próprio;
+- botão **Atualizar agora**;
+- atualização automática de 30 em 30 minutos;
+- imagem do produto nas entidades quando fornecida pela CeX.
 
-```text
-ha_apps/
-├── integrations/   # Custom integrations / custom_components
-│   ├── cex/
-│   └── timezone_change/
-├── cards/          # Lovelace / frontend cards
-├── esphome/        # Componentes externos, YAML e projetos ESPHome
-├── addons/         # Add-ons para Home Assistant OS / Supervisor
-├── services/       # Serviços auxiliares: bridges, Traccar/geocoder, backends
-├── automations/    # Automações reutilizáveis
-├── blueprints/     # Blueprints
-├── packages/       # Packages Home Assistant
-├── scripts/        # Scripts e ferramentas auxiliares para HA
-├── dashboards/     # Dashboards / exemplos Lovelace
-├── installations/  # Configurações completas Casa/Caravana
-├── docs/           # Documentação e plano de migração
-└── external/       # Índice de forks/projetos externos relacionados com HA
-```
+## Instalação manual
 
-## Integrações atuais
+1. Copiar `custom_components/cex` para `/config/custom_components/cex` no Home Assistant.
+2. Reiniciar o Home Assistant.
+3. Abrir **Definições → Dispositivos e Serviços → Adicionar integração**.
+4. Procurar por **CeX Monitor**.
+5. Pesquisar o produto, selecionar o resultado e, se quiseres, indicar um preço-alvo.
 
-- `integrations/timezone_change` — gestão de fusos horários, mudanças de hora/DST e localização móvel através de `device_tracker`.
-- `integrations/cex` — monitorização de produtos CeX Portugal: preços, stock online, disponibilidade em lojas próximas e preço-alvo.
+Para monitorizar vários produtos, adiciona a integração novamente para cada produto.
 
-## Projetos a consolidar
+## Entidades criadas
 
-O inventário completo está em [docs/MIGRATION.md](docs/MIGRATION.md).
+Por produto são criados sensores equivalentes a:
 
-Inclui, entre outros:
-- GPSD Advanced
-- GSM Tracker
-- Metro Lisboa
-- SIMAR
-- Fogos.pt
-- Ocorrências Ativas PT
-- E-Redes
-- Offcloud
-- Resíduos PT
-- Astro Tracker
-- Pingo Doce Plus
-- FreePBX/Asterisk bridge
-- HT503
-- Traccar Geocoder
-- ESPHome Presence
+- `sensor.<produto>_preco_de_venda`
+- `sensor.<produto>_valor_em_dinheiro`
+- `sensor.<produto>_valor_em_voucher`
+- `sensor.<produto>_stock_online`
+- `sensor.<produto>_loja_mais_proxima_com_stock`
+- `sensor.<produto>_stock_da_loja_mais_proxima`
+- `sensor.<produto>_distancia_da_loja_mais_proxima`
+- `binary_sensor.<produto>_disponivel_online`
+- `binary_sensor.<produto>_disponivel_numa_loja_proxima`
+- `binary_sensor.<produto>_preco_alvo_atingido` (quando configurado)
+- `button.<produto>_atualizar_agora`
 
-## Regra de organização
+O nome final das entidades é atribuído pelo Home Assistant e pode ser alterado na UI.
 
-- Projeto novo de Home Assistant criado por nós → fica neste repositório.
-- Custom integration → `integrations/<domain>/`.
-- Lovelace card → `cards/<nome>/`.
-- ESPHome → `esphome/<nome>/`.
-- Add-on → `addons/<nome>/`.
-- Serviço auxiliar de HA → `services/<nome>/`.
-- Automação/blueprint/package → pasta respetiva.
-- Configuração completa → `installations/<nome>/`.
-- Fork externo → manter referenciado em `external/` até decidirmos manter uma versão própria.
+## API
 
-## HACS
+Esta integração usa os endpoints web públicos utilizados pelo site CeX/WeBuy (`wss2.cex.pt.webuy.io`). Não existe afiliação oficial com a CeX e estes endpoints podem mudar sem aviso.
 
-Este repositório funciona como **monorepo de desenvolvimento**.
+Não são usados login, conta CeX, checkout, encomendas ou dados pessoais.
 
-Projetos destinados a distribuição individual pelo HACS podem ser publicados/sincronizados para repositórios próprios a partir das respetivas subpastas. Assim conseguimos manter o GitHub organizado sem sacrificar a estrutura esperada pelas ferramentas de distribuição.
+## Próximos passos
 
-
-## Instalação por HACS
-
-**Não adicionar `ha_apps` diretamente aos Repositórios personalizados do HACS.**
-
-O HACS valida a raiz de cada repositório e uma integração HACS precisa de ter uma estrutura semelhante a:
-
-```text
-<repo>/
-├── custom_components/
-│   └── <domain>/
-├── hacs.json
-├── README.md
-└── LICENSE
-```
-
-Como `ha_apps` é um monorepo, as integrações estão dentro de `integrations/<nome>/`. Por isso cada integração destinada ao HACS terá um pequeno repositório de distribuição próprio, sincronizado a partir deste monorepo.
-
-Para as duas integrações atuais:
-- `integrations/cex/` → repositório de distribuição recomendado: `ha-cex`
-- `integrations/timezone_change/` → repositório de distribuição recomendado: `ha-timezone-change`
-
-Ver [docs/HACS_DISTRIBUTION.md](docs/HACS_DISTRIBUTION.md).
+- watchlists/pesquisas dinâmicas;
+- alertas de novos resultados;
+- histórico e variação de preço;
+- filtros por raio/loja;
+- ações para pesquisa e refresh;
+- suporte opcional a outras regiões CeX.
